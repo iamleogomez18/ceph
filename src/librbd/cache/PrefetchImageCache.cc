@@ -49,10 +49,30 @@ void PrefetchImageCache<I>::aio_read(Extents &&image_extents, bufferlist *bl,
   CephContext *cct = m_image_ctx.cct;
   ldout(cct, 20) << "image_extents=" << image_extents << ", "
                  << "on_finish=" << on_finish << dendl;
-
+	
+  ldout(cct, 0) << "Image extent first=" << image_extents.first << ", "
+	  	<< "Image extent second=" << image_extents.second << dendl;
   // writeback's aio_read method used for reading from cluster
+	
+  PrefetchImageCache<I>::extentToChunks(image_extents);
+	
   m_image_writeback.aio_read(std::move(image_extents), bl, fadvise_flags,
                              on_finish);
+}
+	
+void PrefetchImageCache<I>::extentToChunks(Extents &&image_extents){
+
+  //getting the size of the chunk
+  if ((image_extents.second - image_extents.first) < CACHE_CHUNK_SIZE) {
+    continue;
+    //if the size of extent is bigger then the chunks size
+  } else if ((image_extents.second - image_extents.first) >CACHE_CHUNK_SIZE) {
+    uint64_t sizeToReduce = image_extents.second - CACHE_CHUNK_SIZE;
+    image_extents.second -= sizeToReduce;
+  //if the size of the chunk is similar to the extent, then just continue
+  } else{
+    continue
+  }
 }
 
 template <typename I>
